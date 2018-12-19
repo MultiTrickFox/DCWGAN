@@ -25,9 +25,9 @@ width = 256
 height = 256
 
 
-hm_epochs  = 20
-hm_data    = 900
-batches_of = 3
+hm_epochs  = 1 # 20
+hm_data    = 1 # 900
+batches_of = 1 # 3
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -96,9 +96,13 @@ input('Training is complete.')
 
 
 
-from PIL import Image
+import torchvision.transforms.functional as F
 
-for _ in range(5): Image.fromarray(generator.forward().view(width, height, 3).numpy()).save("result"+str(_+1)+".jpeg")
+for _ in range(5):
+
+    result = generator.forward().view(width, height, 3)
+    result_arr = result.detach().cpu()
+    F.to_pil_image(result_arr).save("result"+str(_+1)+".jpg")
 
 
 
