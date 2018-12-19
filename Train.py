@@ -18,8 +18,8 @@ height = 128
 
 
 hm_epochs  = 20
-hm_data    = 20
-batches_of = 1
+hm_data    = 40
+batches_of = 20
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -58,14 +58,15 @@ for i in range(hm_epochs):
     # print(f'Epoch {i} Loss Disc: {epoch_loss_disc}')
 
 
-    epoch_loss_gen = 0
 
     constructed_data = generator.forward(batchsize=batches_of)
     discriminator_result = discriminator.forward(constructed_data)
 
+    epoch_loss_gen = 0
+
     if gen_maximize_loss:
         loss = Models.loss_generator(discriminator_result, loss_type='maximize')
-        epoch_loss_gen -= float(loss)
+        epoch_loss_gen += float(loss)
 
         Models.update(loss, discriminator, generator, update_for='generator', maximize_loss=True, lr=learning_rate, batch_size=batches_of)
 
