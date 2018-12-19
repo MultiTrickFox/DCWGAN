@@ -26,8 +26,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 100
-batches_of = 25
+hm_data    = 500
+batches_of = 20
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -48,19 +48,16 @@ for i in range(hm_epochs):
     epoch_loss_gen, epoch_loss_disc = 0, 0
 
     for j in range(int(hm_data/batches_of)):
-        
-        fake_data = generator.forward(batchsize=batches_of)
+
         real_data = res.get_data(batches_of)
+        fake_data = generator.forward(batchsize=batches_of)
 
-        fake_set = tuple([(data, 0) for data in fake_data])
         real_set = tuple([(data, 1) for data in real_data])
-
-        dataset = (e for e in fake_set + real_set)
-
+        fake_set = tuple([(data, 0) for data in fake_data])
 
         databox = []
         labelbox = []
-        for e in dataset:
+        for e in fake_set + real_set:
 
             databox.append(e[0])
             labelbox.append(e[1])
