@@ -6,6 +6,12 @@ import random
 import numpy
 
 
+import os
+import sys
+currdir = os.path.dirname(sys.argv[0])
+os.chdir(os.path.abspath(currdir))
+
+
 def get_data(hm_samples):
     files = glob('data/*.jpg')
     data = []
