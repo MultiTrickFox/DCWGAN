@@ -14,7 +14,7 @@ if torch.cuda.is_available():
 
 
 class Generator(nn.Module):
-    def __init__(self, noise_size, hm_filters1, hm_filters2, width_out, height_out):
+    def __init__(self, noise_size, hm_filters1, hm_filters2, width_out, height_out, layers):
         super(Generator, self).__init__()
         self.noise_size = noise_size
 
@@ -22,8 +22,8 @@ class Generator(nn.Module):
 
             nn.Conv2d(in_channels  = hm_channels,
                       out_channels = hm_filters1,
-                      kernel_size  = (required_kernel_size(noise_size, int(noise_size*4/5)),
-                                      required_kernel_size(noise_size, int(noise_size*4/5))),
+                      kernel_size  = (required_kernel_size(noise_size, layers[0]),
+                                      required_kernel_size(noise_size, layers[0])),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_filters1),
@@ -31,8 +31,8 @@ class Generator(nn.Module):
 
             nn.Conv2d(in_channels  = hm_filters1,
                       out_channels = hm_filters2,
-                      kernel_size  = (required_kernel_size(int(noise_size*4/5), int(noise_size*3/5)),
-                                      required_kernel_size(int(noise_size*4/5), int(noise_size*3/5))),
+                      kernel_size  = (required_kernel_size(int(layers[0]), int(layers[1])),
+                                      required_kernel_size(int(layers[0]), int(layers[1]))),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_filters2),
@@ -40,8 +40,8 @@ class Generator(nn.Module):
 
             nn.Conv2d(in_channels  = hm_filters2,
                       out_channels = hm_channels,
-                      kernel_size  = (required_kernel_size(int(noise_size*3/5), width_out),
-                                      required_kernel_size(int(noise_size*3/5), height_out)),
+                      kernel_size  = (required_kernel_size(int(layers[1]), width_out),
+                                      required_kernel_size(int(layers[1]), height_out)),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_channels),
@@ -52,15 +52,15 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, width_in, height_in, hm_filters1, hm_filters2):
+    def __init__(self, width_in, height_in, hm_filters1, hm_filters2, layers):
         super(Discriminator, self).__init__()
 
         self.model = nn.Sequential(
 
             nn.Conv2d(in_channels  = hm_channels,
                       out_channels = hm_filters1,
-                      kernel_size  = (required_kernel_size(width_in, int(width_in*4/5)),
-                                      required_kernel_size(height_in, int(height_in*4/5))),
+                      kernel_size  = (required_kernel_size(width_in, layers[0][0]),
+                                      required_kernel_size(height_in, layers[0][1])),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_filters1),
@@ -68,8 +68,8 @@ class Discriminator(nn.Module):
 
             nn.Conv2d(in_channels  = hm_filters1,
                       out_channels = hm_filters2,
-                      kernel_size  = (required_kernel_size(int(width_in*4/5), int(width_in*3/5)),
-                                      required_kernel_size(int(height_in*4/5), int(height_in*3/5))),
+                      kernel_size  = (required_kernel_size(layers[0][0], layers[1][0]),
+                                      required_kernel_size(layers[0][1], layers[1][1])),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_filters2),
@@ -78,7 +78,7 @@ class Discriminator(nn.Module):
 
         self.model2 = nn.Sequential(
 
-            nn.Linear(int(width_in*3/5) * int(height_in*3/5) * hm_filters2, 1, bias=False),
+            nn.Linear(layers[1][0] * layers[1][1] * hm_filters2, 1, bias=False),
             nn.Sigmoid()
         )
 

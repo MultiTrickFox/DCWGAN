@@ -4,6 +4,13 @@ import res
 import random
 
 
+    # models
+
+generator = (205, 155)
+
+discriminator = ((110,110),(45,45))
+
+
     # params
 
 
@@ -28,8 +35,8 @@ learning_rate     = 0.001
     #
 
 
-generator = Models.Generator(noise_size, hm_filters1, hm_filters2, width, height)
-discriminator = Models.Discriminator(width, height, hm_filters2, hm_filters1)
+generator = Models.Generator(noise_size, hm_filters1, hm_filters2, width, height, generator)
+discriminator = Models.Discriminator(width, height, hm_filters2, hm_filters1, discriminator)
 
 
     #
