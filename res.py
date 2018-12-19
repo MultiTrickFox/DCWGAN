@@ -19,7 +19,7 @@ def get_data(hm_samples):
     data = []
     for file in random.choices(files, k=hm_samples):
         img = Image.open(file) ; img.load()
-        data.append(Tensor(numpy.asarray(img, dtype="float32")))
+        data.append(Tensor(numpy.asarray(img, dtype="float32").reshape(3, 256, 256)))
     return data
 
 def pickle_save(obj, file_path):

@@ -1,7 +1,7 @@
 import Models
 import res
 
-from torch import Tensor
+from torch import stack
 
 
     # models
@@ -26,7 +26,7 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 500
+hm_data    = 100
 batches_of = 20
 
 gen_maximize_loss = False
@@ -61,12 +61,11 @@ for i in range(hm_epochs):
 
             databox.append(e[0])
             labelbox.append(e[1])
+            print(type(databox[-1]), databox[-1].size())
 
-        data = Tensor(databox)
-        label = Tensor(labelbox)
-
-        discriminator_result = discriminator.forward(data)
-        loss = Models.loss_discriminator(discriminator_result, label)
+        print('reach')
+        discriminator_result = discriminator.forward(stack(databox, 0))
+        loss = Models.loss_discriminator(discriminator_result, stack(labelbox, 0))
 
         Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
 
