@@ -1,7 +1,7 @@
 import Models
 import res
 
-from torch import stack
+from torch import stack, tensor
 
 
     # models
@@ -26,8 +26,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 1
-batches_of = 1
+hm_data    = 10
+batches_of = 2
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -50,12 +50,10 @@ for i in range(hm_epochs):
     for j in range(int(hm_data/batches_of)):
 
         real_data = res.get_data(batches_of)
-        print('reach data')
         fake_data = generator.forward(batchsize=batches_of)
-        print('reach generator')
 
-        real_set = tuple([(data.unsqueeze(0), 1) for data in real_data])
-        fake_set = tuple([(data.unsqueeze(0), 0) for data in fake_data])
+        real_set = tuple([(data, tensor(1.0)) for data in real_data])
+        fake_set = tuple([(data, tensor(0.0)) for data in fake_data])
 
         databox = []
         labelbox = []
@@ -63,9 +61,7 @@ for i in range(hm_epochs):
 
             databox.append(e[0])
             labelbox.append(e[1])
-            print(type(databox[-1]), databox[-1].size())
 
-        print('reach')
         discriminator_result = discriminator.forward(stack(databox, 0))
         loss = Models.loss_discriminator(discriminator_result, stack(labelbox, 0))
 
@@ -84,7 +80,7 @@ for i in range(hm_epochs):
 
         else:
             loss = Models.loss_generator(discriminator_result)
-            epoch_loss_gen += float(loss)
+            epoch_loss_gen += float(loss.cpu())
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)
 

@@ -89,11 +89,14 @@ class Discriminator(nn.Module):
         return result
 
 
-def loss_discriminator(discriminator_result, label):
-    if label == 1:
-        return (- torch.log(discriminator_result)).sum()
-    else:
-        return (- torch.log(1 - discriminator_result)).sum()
+def loss_discriminator(discriminator_results, labels):
+    losses = []
+    for discriminator_result, label in zip(discriminator_results, labels):
+        if label == 1:
+            losses.append((- torch.log(discriminator_result)).sum())
+        else:
+            losses.append((- torch.log(1 - discriminator_result)).sum())
+        return sum(losses)
 
 
 def loss_generator(discriminator_result, loss_type='minimize'):
