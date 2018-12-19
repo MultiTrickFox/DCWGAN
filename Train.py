@@ -47,9 +47,10 @@ for i in range(hm_epochs):
 
     epoch_loss_gen, epoch_loss_disc = 0, 0
 
-    for j in range(int(hm_data/batches_of)):
+    batches = res.batchify(res.get_data(hm_data), batches_of)
 
-        real_data = res.get_data(batches_of)
+    for real_data in batches:
+
         fake_data = generator.forward(batchsize=batches_of)
 
         real_set = tuple([(data, tensor(1)) for data in real_data])

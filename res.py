@@ -22,6 +22,16 @@ def get_data(hm_samples):
         data.append(Tensor(numpy.asarray(img, dtype="float32").reshape(3, 256, 256)))
     return data
 
+def batchify(resource, batch_size):
+    hm_batches = int(len(resource) / batch_size)
+    batched_resource = [resource[_ * batch_size : (_+1) * batch_size]
+                        for _ in range(hm_batches)]
+    hm_leftover = len(resource) % batch_size
+    if hm_leftover != 0:
+        batched_resource.append(resource[-hm_leftover:])
+
+    return batched_resource
+
 def pickle_save(obj, file_path):
     with open(file_path, "wb") as f:
         return pickle.dump(obj, MacOSFile(f), protocol=pickle.HIGHEST_PROTOCOL)
