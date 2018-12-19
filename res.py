@@ -11,13 +11,15 @@ import sys
 currdir = os.path.dirname(sys.argv[0])
 os.chdir(os.path.abspath(currdir))
 
+from torch import Tensor
+
 
 def get_data(hm_samples):
     files = glob('data/*.jpg')
     data = []
     for file in random.choices(files, k=hm_samples):
         img = Image.open(file) ; img.load()
-        data.append(numpy.asarray(img, dtype="float32"))
+        data.append(Tensor(numpy.asarray(img, dtype="float32")))
     return data
 
 def pickle_save(obj, file_path):

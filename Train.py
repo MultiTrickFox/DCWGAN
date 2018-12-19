@@ -1,8 +1,6 @@
 import Models
 import res
 
-import random
-
 from torch import Tensor
 
 
@@ -28,8 +26,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 500
-batches_of = 50
+hm_data    = 2
+batches_of = 1
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -50,14 +48,15 @@ for i in range(hm_epochs):
     epoch_loss_gen, epoch_loss_disc = 0, 0
 
     for j in range(int(hm_data/batches_of)):
-
+        
         fake_data = generator.forward(batchsize=batches_of)
         real_data = res.get_data(batches_of)
 
         fake_set = tuple([(data, 0) for data in fake_data])
         real_set = tuple([(data, 1) for data in real_data])
 
-        dataset = Tensor(random.shuffle([e for e in fake_set + real_set]))
+        dataset = Tensor([e for e in fake_set + real_set])
+
         data = dataset[:,0]
         label = dataset[:,1]
 
@@ -67,9 +66,6 @@ for i in range(hm_epochs):
         Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
 
         epoch_loss_disc += float(loss)
-        print(f'Epoch {i} Loss Disc: {epoch_loss_disc}')
-
-
 
         constructed_data = generator.forward(batchsize=batches_of)
         discriminator_result = discriminator.forward(constructed_data)
@@ -86,8 +82,9 @@ for i in range(hm_epochs):
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)
 
-    print(f'Epoch {i} Loss Gen: {epoch_loss_gen}')
 
+    print(f'Epoch {i} Loss Disc: {epoch_loss_disc}')
+    print(f'Epoch {i} Loss Gen: {epoch_loss_gen}')
 
 res.pickle_save(discriminator, 'discriminator.pkl')
 res.pickle_save(generator, 'generator.pkl')
