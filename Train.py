@@ -3,30 +3,33 @@ import res
 
 import random
 
+from torch import Tensor
+
 
     # models
 
-generator = (205, 155)
 
-discriminator = ((110,110),(45,45))
+generator = (416, 312)
+
+discriminator = ((200,200),(128,128))
 
 
     # params
 
 
-noise_size = 256
+noise_size = 512
 
 hm_filters1 = 4
 
 hm_filters2 = 5
 
-width = 128
-height = 128
+width = 256
+height = 256
 
 
 hm_epochs  = 20
-hm_data    = 40
-batches_of = 20
+hm_data    = 500
+batches_of = 50
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -48,25 +51,23 @@ for i in range(hm_epochs):
 
     for j in range(int(hm_data/batches_of)):
 
-        # fake_data = generator.forward(batchsize=batches_of)       # todo : unlock when data comes in .
-        # real_data = res.get_data(hm_data)
-        #
-        # fake_set = tuple([(data, 0) for data in fake_data])
-        # real_set = tuple([(data, 1) for data in real_data])
-        #
-        # dataset = tuple(random.shuffle([e for e in fake_set + real_set]))
-        #
-        #
+        fake_data = generator.forward(batchsize=batches_of)
+        real_data = res.get_data(batches_of)
 
-        # for sample, label in dataset: # todo no sample label!!!
-        #
-        #     discriminator_result = discriminator.forward(sample)
-        #     loss = Models.loss_discriminator(discriminator_result, label)
-        #
-        #     Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
-        #
-        #     epoch_loss_disc += float(loss)
-        # print(f'Epoch {i} Loss Disc: {epoch_loss_disc}')
+        fake_set = tuple([(data, 0) for data in fake_data])
+        real_set = tuple([(data, 1) for data in real_data])
+
+        dataset = Tensor(random.shuffle([e for e in fake_set + real_set]))
+        data = dataset[:,0]
+        label = dataset[:,1]
+
+        discriminator_result = discriminator.forward(data)
+        loss = Models.loss_discriminator(discriminator_result, label)
+
+        Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
+
+        epoch_loss_disc += float(loss)
+        print(f'Epoch {i} Loss Disc: {epoch_loss_disc}')
 
 
 
@@ -85,7 +86,7 @@ for i in range(hm_epochs):
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)
 
-        print(f'Epoch {i} Loss Gen: {epoch_loss_gen}')
+    print(f'Epoch {i} Loss Gen: {epoch_loss_gen}')
 
 
 res.pickle_save(discriminator, 'discriminator.pkl')
