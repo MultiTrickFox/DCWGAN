@@ -1,4 +1,5 @@
 import pickle
+
 from PIL import Image
 from glob import glob
 
@@ -7,9 +8,9 @@ import numpy
 
 from torch import Tensor
 
-
 import os
 import sys
+
 currdir = os.path.dirname(sys.argv[0])
 os.chdir(os.path.abspath(currdir))
 

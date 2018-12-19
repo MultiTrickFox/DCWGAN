@@ -92,7 +92,7 @@ for i in range(hm_epochs):
 res.pickle_save(discriminator, 'discriminator.pkl')
 res.pickle_save(generator, 'generator.pkl')
 
-print('Training is complete.')
+input('Training is complete.')
 
 
 
