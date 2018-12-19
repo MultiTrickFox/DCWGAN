@@ -26,8 +26,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 2
-batches_of = 1
+hm_data    = 100
+batches_of = 25
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -55,10 +55,18 @@ for i in range(hm_epochs):
         fake_set = tuple([(data, 0) for data in fake_data])
         real_set = tuple([(data, 1) for data in real_data])
 
-        dataset = Tensor([e for e in fake_set + real_set])
+        dataset = (e for e in fake_set + real_set)
 
-        data = dataset[:,0]
-        label = dataset[:,1]
+
+        databox = []
+        labelbox = []
+        for e in dataset:
+
+            databox.append(e[0])
+            labelbox.append(e[1])
+
+        data = Tensor(databox)
+        label = Tensor(labelbox)
 
         discriminator_result = discriminator.forward(data)
         loss = Models.loss_discriminator(discriminator_result, label)

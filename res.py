@@ -5,13 +5,13 @@ from glob import glob
 import random
 import numpy
 
+from torch import Tensor
+
 
 import os
 import sys
 currdir = os.path.dirname(sys.argv[0])
 os.chdir(os.path.abspath(currdir))
-
-from torch import Tensor
 
 
 def get_data(hm_samples):
