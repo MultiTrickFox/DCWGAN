@@ -26,8 +26,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 100
-batches_of = 20
+hm_data    = 1
+batches_of = 1
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -50,10 +50,12 @@ for i in range(hm_epochs):
     for j in range(int(hm_data/batches_of)):
 
         real_data = res.get_data(batches_of)
+        print('reach data')
         fake_data = generator.forward(batchsize=batches_of)
+        print('reach generator')
 
-        real_set = tuple([(data, 1) for data in real_data])
-        fake_set = tuple([(data, 0) for data in fake_data])
+        real_set = tuple([(data.unsqueeze(0), 1) for data in real_data])
+        fake_set = tuple([(data.unsqueeze(0), 0) for data in fake_data])
 
         databox = []
         labelbox = []
