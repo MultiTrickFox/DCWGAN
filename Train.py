@@ -96,6 +96,10 @@ print('Training is complete.')
 
 
 
+from PIL import Image
+
+for _ in range(5): Image.fromarray(generator.forward().view(width, height, 3).numpy()).save("result"+str(_+1)+".jpeg")
+
 
 
 
