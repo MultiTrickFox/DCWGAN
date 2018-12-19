@@ -8,7 +8,6 @@ hm_channels = 3
 stride      = 1
 
 if torch.cuda.is_available():
-    pass
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 # models

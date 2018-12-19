@@ -9,7 +9,7 @@ from torch import stack, tensor
 
 generator = (416, 312)
 
-discriminator = ((200,200),(128,128))
+discriminator = ((196,196),(98,98))
 
 
     # params
@@ -26,8 +26,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 10
-batches_of = 2
+hm_data    = 900
+batches_of = 3
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -52,8 +52,8 @@ for i in range(hm_epochs):
         real_data = res.get_data(batches_of)
         fake_data = generator.forward(batchsize=batches_of)
 
-        real_set = tuple([(data, tensor(1.0)) for data in real_data])
-        fake_set = tuple([(data, tensor(0.0)) for data in fake_data])
+        real_set = tuple([(data, tensor(1)) for data in real_data])
+        fake_set = tuple([(data, tensor(0)) for data in fake_data])
 
         databox = []
         labelbox = []
