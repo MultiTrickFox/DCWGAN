@@ -90,48 +90,48 @@ class Discriminator(nn.Module):
 
 def loss_discriminator(discriminator_result, label):
     if label == 1:
-        return - torch.log(discriminator_result)
+        return (- torch.log(discriminator_result)).sum()
     else:
-        return - torch.log(1 - discriminator_result)
+        return (- torch.log(1 - discriminator_result)).sum()
 
 
 def loss_generator(discriminator_result, loss_type='minimize'):
     if loss_type is 'minimize':
-        return - torch.log(discriminator_result)
+        return (- torch.log(discriminator_result)).sum()
     else:
-        return - torch.log(1 - discriminator_result)
+        return (- torch.log(1 - discriminator_result)).sum()
 
 
 def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0.001, batch_size=1):
     loss.backward()
+    discriminator = discriminator.parameters()
+    generator = generator.parameters()
     with torch.no_grad():
 
         if update_for == 'discriminator':
-            for layer in discriminator:
-                for param in layer.values():
-                    if param.grad is not None:
-                        param += lr * param.grad / batch_size
-                        param.grad = None
 
-            for layer in generator:
-                for param in layer.values():
-                    if param.grad is not None:
-                        param.grad = None
+            for param in discriminator:
+                if param.grad is not None:
+                    param -= lr * param.grad / batch_size
+                    param.grad = None
+
+            for param in generator:
+                if param.grad is not None:
+                    param.grad = None
 
         elif update_for == 'generator':
-            for layer in discriminator:
-                    for param in layer.values():
-                        if param.grad is not None:
-                            param.grad = None
 
-            for layer in generator:
-                for param in layer.values():
-                    if param.grad is not None:
-                        if maximize_loss:
-                            param += lr * param.grad / batch_size
-                        else:
-                            param -= lr * param.grad / batch_size
-                        param.grad = None
+            for param in discriminator:
+                if param.grad is not None:
+                    param.grad = None
+
+            for param in generator:
+                if param.grad is not None:
+                    if maximize_loss:
+                        param += lr * param.grad / batch_size
+                    else:
+                        param -= lr * param.grad / batch_size
+                    param.grad = None
 
 
 def interact(generator): return generator.forward()
