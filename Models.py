@@ -1,14 +1,17 @@
 import torch
 from torch import nn
 
+from multiprocessing.pool import ThreadPool as Pool
+from torch.multiprocessing import cpu_count
+
 
 # global declarations
 
 hm_channels = 3
 stride      = 1
 
-# if torch.cuda.is_available():
-#     torch.set_default_tensor_type('torch.cuda.FloatTensor')
+if torch.cuda.is_available():
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 # models
 
@@ -89,20 +92,38 @@ class Discriminator(nn.Module):
 
 
 def loss_discriminator(discriminator_results, labels):
-    losses = []
-    for discriminator_result, label in zip(discriminator_results, labels):
-        if label == 1:
-            losses.append((- torch.log(discriminator_result)).sum())
-        else:
-            losses.append((- torch.log(1 - discriminator_result)).sum())
-        return sum(losses)
+    with Pool(cpu_count()) as p:
+        results = p.map(fn_disc, tuple([(discriminator_result, label) for discriminator_result, label in zip(discriminator_results, labels)]))
 
+        p.close()
+        p.join()
 
-def loss_generator(discriminator_result, loss_type='minimize'):
-    if loss_type is 'minimize':
-        return (- torch.log(discriminator_result)).sum()
+    return sum(results)
+
+def fn_disc(data):
+    output, target = data
+    if target == 1:
+        return (- torch.log(output)).sum()
     else:
-        return (- torch.log(1 - discriminator_result)).sum()
+        return (- torch.log(1 - output)).sum()
+
+
+def loss_generator(discriminator_results, loss_type='minimize'):
+    with Pool(cpu_count()) as p:
+        results = p.map(fn_disc, tuple([(discriminator_result, loss_type) for discriminator_result in discriminator_results]))
+
+        p.close()
+        p.join()
+
+    return sum(results)
+
+
+def fn_gen(data):
+    output, type = data
+    if type == 'minimize':
+        return (- torch.log(output)).sum()
+    else:
+        return (- torch.log(1 - output)).sum()
 
 
 def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0.001, batch_size=1):

@@ -9,7 +9,7 @@ from torch import stack, Tensor
     # models
 
 
-generator = (400, 320)
+generator = (320, 280)
 
 discriminator = (128, 64)
 
@@ -17,7 +17,7 @@ discriminator = (128, 64)
     # params
 
 
-noise_size = 512
+noise_size = 400
 
 hm_filters1 = 4
 
@@ -28,8 +28,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 300
-batches_of = 3
+hm_data    = 2# 300
+batches_of = 1# 5
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -38,8 +38,8 @@ learning_rate     = 0.001
     #
 
 
-generator = Models.Generator(noise_size, hm_filters1, hm_filters2, width, height, generator).to('cuda')
-discriminator = Models.Discriminator(width, height, hm_filters2, hm_filters1, discriminator).to('cuda')
+generator = Models.Generator(noise_size, hm_filters1, hm_filters2, width, height, generator)
+discriminator = Models.Discriminator(width, height, hm_filters2, hm_filters1, discriminator)
 
 
     #
@@ -66,11 +66,11 @@ for i in range(hm_epochs):
         databox = []
         labelbox = []
         for e in all_set:
-            databox.append(e[0].to('cuda'))
+            databox.append(e[0])
             labelbox.append(e[1])
 
         discriminator_result = discriminator.forward(stack(databox, 0))
-        loss = Models.loss_discriminator(discriminator_result, Tensor(labelbox))
+        loss = Models.loss_discriminator(discriminator_result.to('cpu'), Tensor(labelbox).to('cpu'))
 
         Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
 
@@ -80,14 +80,14 @@ for i in range(hm_epochs):
         discriminator_result = discriminator.forward(constructed_data)
 
         if gen_maximize_loss:
-            loss = Models.loss_generator(discriminator_result, loss_type='maximize')
+            loss = Models.loss_generator(discriminator_result.to('cpu'), loss_type='maximize')
             epoch_loss_gen += float(loss)
 
             Models.update(loss, discriminator, generator, update_for='generator', maximize_loss=True, lr=learning_rate, batch_size=batches_of)
 
         else:
-            loss = Models.loss_generator(discriminator_result)
-            epoch_loss_gen += float(loss.cpu())
+            loss = Models.loss_generator(discriminator_result.to('cpu'))
+            epoch_loss_gen += float(loss)
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)
 
