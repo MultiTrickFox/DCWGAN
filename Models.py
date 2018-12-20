@@ -138,16 +138,19 @@ def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0
                 if param.grad is not None:
                     param -= lr * param.grad / batch_size
                     param.grad = None
+                else: print(f'none grad on {update_for} : discriminator')
 
             for param in generator:
                 if param.grad is not None:
                     param.grad = None
+                else: print(f'none grad on {update_for} : generator')
 
         elif update_for == 'generator':
 
             for param in discriminator:
                 if param.grad is not None:
                     param.grad = None
+                else: print(f'none grad on {update_for} : discriminator')
 
             for param in generator:
                 if param.grad is not None:
@@ -156,6 +159,7 @@ def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0
                     else:
                         param -= lr * param.grad / batch_size
                     param.grad = None
+                else: print(f'none grad on {update_for} : generator')
 
 
 def interact(generator): return generator.forward()
