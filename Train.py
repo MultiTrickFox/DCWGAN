@@ -9,7 +9,7 @@ from torch import stack, Tensor
     # models
 
 
-generator = (320, 280)
+generator = (340, 280)
 
 discriminator = (128, 64)
 
@@ -17,7 +17,7 @@ discriminator = (128, 64)
     # params
 
 
-noise_size = 400
+noise_size = 420
 
 hm_filters1 = 4
 
@@ -28,8 +28,8 @@ height = 256
 
 
 hm_epochs  = 20
-hm_data    = 2# 300
-batches_of = 1# 5
+hm_data    = 100
+batches_of = 5
 
 gen_maximize_loss = False
 learning_rate     = 0.001
