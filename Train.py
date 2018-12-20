@@ -28,8 +28,8 @@ height = 256
 
 
 hm_epochs  = 10
-hm_data    = 200
-batches_of = 8
+hm_data    = 324
+batches_of = 9
 
 gen_maximize_loss = False
 learning_rate     = 0.001
@@ -91,8 +91,8 @@ for i in range(hm_epochs):
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)
 
-
-    print(f'Epoch {i} Loss Disc : {round(epoch_loss_disc,3)} Loss Gen : {round(epoch_loss_gen,3)}')
+        print('/', end='', flush=True)
+    print(f'\n Epoch {i} Loss Disc : {round(epoch_loss_disc,3)} Loss Gen : {round(epoch_loss_gen,3)}')
     for e,ee in zip(losses, (epoch_loss_disc, epoch_loss_gen)): e.append(ee)
 
 res.pickle_save(discriminator, 'discriminator.pkl')
