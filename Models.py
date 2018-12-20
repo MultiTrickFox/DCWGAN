@@ -78,9 +78,12 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(),
         )
 
+        conv_size_flatten = layers[-1] * layers[-1] * hm_filters2
+
         self.model2 = nn.Sequential(
 
-            nn.Linear(layers[1] * layers[1] * hm_filters2, 1, bias=False),
+            nn.Linear(conv_size_flatten, int(conv_size_flatten / 2), bias=False),
+            nn.Linear(int(conv_size_flatten / 2), 1, bias=False),
             nn.Sigmoid()
         )
 

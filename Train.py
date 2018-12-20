@@ -11,7 +11,7 @@ from torch import stack, Tensor
 
 generator = (340, 280)
 
-discriminator = (128, 64)
+discriminator = (64, 32)
 
 
     # params
@@ -27,9 +27,9 @@ width = 256
 height = 256
 
 
-hm_epochs  = 20
-hm_data    = 100
-batches_of = 5
+hm_epochs  = 10
+hm_data    = 200
+batches_of = 8
 
 gen_maximize_loss = False
 learning_rate     = 0.001
