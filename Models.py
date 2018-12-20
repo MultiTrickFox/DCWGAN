@@ -2,7 +2,6 @@ import torch
 from torch import nn
 
 from multiprocessing.pool import ThreadPool as Pool
-from torch.multiprocessing import cpu_count
 
 
 # global declarations
@@ -92,15 +91,15 @@ class Discriminator(nn.Module):
 
 
 def loss_discriminator(discriminator_results, labels):
-    with Pool(cpu_count()) as p:
-        results = p.map(fn_disc, tuple([(discriminator_result, label) for discriminator_result, label in zip(discriminator_results, labels)]))
+    with Pool(len(labels)) as p:
+        results = p.map(d_loss_fn, tuple([(discriminator_result, label) for discriminator_result, label in zip(discriminator_results, labels)]))
 
         p.close()
         p.join()
 
     return sum(results)
 
-def fn_disc(data):
+def d_loss_fn(data):
     output, target = data
     if target == 1:
         return (- torch.log(output)).sum()
@@ -109,8 +108,8 @@ def fn_disc(data):
 
 
 def loss_generator(discriminator_results, loss_type='minimize'):
-    with Pool(cpu_count()) as p:
-        results = p.map(fn_disc, tuple([(discriminator_result, loss_type) for discriminator_result in discriminator_results]))
+    with Pool(len(discriminator_results)) as p:
+        results = p.map(d_loss_fn, tuple([(discriminator_result, loss_type) for discriminator_result in discriminator_results]))
 
         p.close()
         p.join()
@@ -118,7 +117,7 @@ def loss_generator(discriminator_results, loss_type='minimize'):
     return sum(results)
 
 
-def fn_gen(data):
+def g_loss_fn(data):
     output, type = data
     if type == 'minimize':
         return (- torch.log(output)).sum()
