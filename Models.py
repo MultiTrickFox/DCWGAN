@@ -7,8 +7,8 @@ from torch import nn
 hm_channels = 3
 stride      = 1
 
-if torch.cuda.is_available():
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+# if torch.cuda.is_available():
+#     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 # models
 
@@ -48,7 +48,7 @@ class Generator(nn.Module):
             nn.Tanh(),
         )
 
-    def forward(self, batchsize=1): return self.model(torch.randn(batchsize, hm_channels, self.noise_size, self.noise_size))
+    def forward(self, batchsize=1): return self.model(torch.randn(batchsize, hm_channels, self.noise_size, self.noise_size).to('cuda'))
 
 
 class Discriminator(nn.Module):
@@ -59,8 +59,8 @@ class Discriminator(nn.Module):
 
             nn.Conv2d(in_channels  = hm_channels,
                       out_channels = hm_filters1,
-                      kernel_size  = (required_kernel_size(width_in, layers[0][0]),
-                                      required_kernel_size(height_in, layers[0][1])),
+                      kernel_size  = (required_kernel_size(width_in, layers[0]),
+                                      required_kernel_size(height_in, layers[0])),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_filters1),
@@ -68,8 +68,8 @@ class Discriminator(nn.Module):
 
             nn.Conv2d(in_channels  = hm_filters1,
                       out_channels = hm_filters2,
-                      kernel_size  = (required_kernel_size(layers[0][0], layers[1][0]),
-                                      required_kernel_size(layers[0][1], layers[1][1])),
+                      kernel_size  = (required_kernel_size(layers[0], layers[1]),
+                                      required_kernel_size(layers[0], layers[1])),
                       stride       = stride,
                       bias         = False),
             nn.BatchNorm2d(hm_filters2),
@@ -78,7 +78,7 @@ class Discriminator(nn.Module):
 
         self.model2 = nn.Sequential(
 
-            nn.Linear(layers[1][0] * layers[1][1] * hm_filters2, 1, bias=False),
+            nn.Linear(layers[1] * layers[1] * hm_filters2, 1, bias=False),
             nn.Sigmoid()
         )
 
