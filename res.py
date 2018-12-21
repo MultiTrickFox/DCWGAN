@@ -1,4 +1,5 @@
 import pickle
+import time
 
 from PIL import Image
 from glob import glob
@@ -43,6 +44,10 @@ def pickle_load(file_path):
             return pickle.load(MacOSFile(f))
     except: return None
 
+
+def get_clock(): return time.asctime(time.localtime(time.time())).split(' ')[3]
+
+
 class MacOSFile(object):
 
     def __init__(self, f):
@@ -70,3 +75,21 @@ class MacOSFile(object):
             batch_size = min(n - idx, 1 << 31 - 1)
             self.f.write(buffer[idx:idx + batch_size])
             idx += batch_size
+
+
+
+def plot(losses, hm_epochs):
+    import matplotlib.pyplot as plot
+
+    for _, color in enumerate(('g', 'b')):
+        plot.figure(_)
+        plot.plot(range(hm_epochs), losses[_], color)
+    plot.show()
+
+def imgmake(generator, hm):
+    import torchvision.transforms.functional as F
+
+    for _ in range(hm):
+        result = generator.forward().squeeze(0)
+        result_arr = result.detach().cpu()
+        F.to_pil_image(result_arr).save("result"+str(_+1)+".jpg")

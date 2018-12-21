@@ -20,14 +20,13 @@ discriminator = (64, 32)
 noise_size = 420
 
 hm_filters1 = 4
-
 hm_filters2 = 5
 
 width = 256
 height = 256
 
 
-hm_epochs  = 10
+hm_epochs  = 100
 hm_data    = 324
 batches_of = 9
 
@@ -38,8 +37,8 @@ learning_rate     = 0.001
     #
 
 
-generator = Models.Generator(noise_size, hm_filters1, hm_filters2, width, height, generator)
-discriminator = Models.Discriminator(width, height, hm_filters2, hm_filters1, discriminator)
+generator = res.pickle_load('generator.pkl')          # Models.Generator(noise_size, hm_filters1, hm_filters2, width, height, generator)
+discriminator = res.pickle_load('discriminator.pkl')  # Models.Discriminator(width, height, hm_filters2, hm_filters1, discriminator)
 
 
     #
@@ -76,8 +75,8 @@ for i in range(hm_epochs):
 
         epoch_loss_disc += float(loss)
 
-        constructed_data = generator.forward(batchsize=batches_of)
-        discriminator_result = discriminator.forward(constructed_data)
+        fake_data = generator.forward(batchsize=batches_of)
+        discriminator_result = discriminator.forward(fake_data)
 
         if gen_maximize_loss:
             loss = Models.loss_generator(discriminator_result.to('cpu'), loss_type='maximize')
@@ -92,30 +91,19 @@ for i in range(hm_epochs):
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)
 
         print('/', end='', flush=True)
-    print(f'\n Epoch {i} Loss Disc : {round(epoch_loss_disc,3)} Loss Gen : {round(epoch_loss_gen,3)}')
-    for e,ee in zip(losses, (epoch_loss_disc, epoch_loss_gen)): e.append(ee)
-
-res.pickle_save(discriminator, 'discriminator.pkl')
-res.pickle_save(generator, 'generator.pkl')
-
+    print(f'\n {res.get_clock()} Epoch {i} Loss Disc : {round(epoch_loss_disc,3)} Loss Gen : {round(epoch_loss_gen,3)}')
+    losses[0].append(epoch_loss_gen) ; losses[1].append(epoch_loss_disc)
 print('Training is complete.')
 
 
 
 
 
-import matplotlib.pyplot as plot
-
-for _, color in enumerate(('g', 'b')):
-    plot.plot(range(hm_epochs), losses[_], color)
-plot.show()
+res.plot(losses, hm_epochs)
+res.imgmake(generator, hm=5)
 
 
-import torchvision.transforms.functional as F
-
-for _ in range(5):
-
-    result = generator.forward().view(3, width, height)
-    result_arr = result.detach().cpu()
-    F.to_pil_image(result_arr).save("result"+str(_+1)+".jpg")
-
+if input('hit n to NOT SAVE..: ') != 'n':
+    res.pickle_save(discriminator, 'discriminator.pkl')
+    res.pickle_save(generator, 'generator.pkl')
+    print('work saved.')
