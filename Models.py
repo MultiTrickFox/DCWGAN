@@ -9,8 +9,6 @@ from multiprocessing.pool import ThreadPool as Pool
 hm_channels = 3
 stride      = 1
 
-if torch.cuda.is_available():
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 # models
 
@@ -45,15 +43,15 @@ class Generator(nn.Module):
             nn.ConvTranspose2d(
                 in_channels  = filters[-1],
                 out_channels = hm_channels,
-                kernel_size  = (required_kernel_size(width, layers[1]),
-                                required_kernel_size(height, layers[1])),
+                kernel_size  = (required_kernel_size(width, layers[-1]),
+                                required_kernel_size(height, layers[-1])),
                 stride       = stride,
                 bias         = False),
             nn.BatchNorm2d(hm_channels),
             nn.Tanh(),
         )
 
-    def forward(self, batchsize=1): return self.model(torch.randn(batchsize, 1, self.noise_size, self.noise_size))
+    def forward(self, batchsize=1): return self.model(torch.randn(batchsize, 1, self.noise_size, self.noise_size).to('cuda'))
 
 
 class Discriminator(nn.Module):
@@ -87,8 +85,7 @@ class Discriminator(nn.Module):
 
         self.model2 = nn.Sequential(
 
-            nn.Linear(flat_size, int(flat_size / 2), bias=False),
-            nn.Linear(int(flat_size / 2), 1, bias=False),
+            nn.Linear(flat_size, 1, bias=False),
             nn.Sigmoid()
         )
 
