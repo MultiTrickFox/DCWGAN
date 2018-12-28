@@ -9,18 +9,19 @@ from torch import stack, Tensor
     # models
 
 
-generator = (340, 280)
+generator = (100, 175)
 
-discriminator = (64, 32)
+discriminator = (175, 100)
+
+
+g_filters = (2, 3)
+d_filters = (3, 2)
 
 
     # params
 
 
-noise_size = 420
-
-hm_filters1 = 4
-hm_filters2 = 5
+noise_size = 50
 
 width = 256
 height = 256
@@ -37,8 +38,8 @@ learning_rate     = 0.001
     #
 
 
-generator = res.pickle_load('generator.pkl')          # Models.Generator(noise_size, hm_filters1, hm_filters2, width, height, generator)
-discriminator = res.pickle_load('discriminator.pkl')  # Models.Discriminator(width, height, hm_filters2, hm_filters1, discriminator)
+generator = Models.Generator(noise_size, generator, g_filters, width, height)
+discriminator = Models.Discriminator(width, height, discriminator, d_filters)
 
 
     #

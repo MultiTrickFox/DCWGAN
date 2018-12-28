@@ -16,74 +16,79 @@ if torch.cuda.is_available():
 
 
 class Generator(nn.Module):
-    def __init__(self, noise_size, hm_filters1, hm_filters2, width_out, height_out, layers):
+    def __init__(self, noise_size, layers, filters, width, height):
         super(Generator, self).__init__()
         self.noise_size = noise_size
 
         self.model = nn.Sequential(
 
-            nn.Conv2d(in_channels  = hm_channels,
-                      out_channels = hm_filters1,
-                      kernel_size  = (required_kernel_size(noise_size, layers[0]),
-                                      required_kernel_size(noise_size, layers[0])),
-                      stride       = stride,
-                      bias         = False),
-            nn.BatchNorm2d(hm_filters1),
+            nn.ConvTranspose2d(
+                in_channels  = 1,
+                out_channels = filters[0],
+                kernel_size  = (required_kernel_size(layers[0], noise_size),
+                                required_kernel_size(layers[0], noise_size)),
+                stride       = stride,
+                bias         = False),
+            nn.BatchNorm2d(filters[0]),
             nn.ReLU(),
 
-            nn.Conv2d(in_channels  = hm_filters1,
-                      out_channels = hm_filters2,
-                      kernel_size  = (required_kernel_size(int(layers[0]), int(layers[1])),
-                                      required_kernel_size(int(layers[0]), int(layers[1]))),
-                      stride       = stride,
-                      bias         = False),
-            nn.BatchNorm2d(hm_filters2),
+            nn.ConvTranspose2d(
+                in_channels  = filters[0],
+                out_channels = filters[-1],
+                kernel_size  = (required_kernel_size(layers[-1], layers[0]),
+                                required_kernel_size(layers[-1], layers[0])),
+                stride       = stride,
+                bias         = False),
+            nn.BatchNorm2d(filters[-1]),
             nn.ReLU(),
 
-            nn.Conv2d(in_channels  = hm_filters2,
-                      out_channels = hm_channels,
-                      kernel_size  = (required_kernel_size(int(layers[1]), width_out),
-                                      required_kernel_size(int(layers[1]), height_out)),
-                      stride       = stride,
-                      bias         = False),
+            nn.ConvTranspose2d(
+                in_channels  = filters[-1],
+                out_channels = hm_channels,
+                kernel_size  = (required_kernel_size(width, layers[1]),
+                                required_kernel_size(height, layers[1])),
+                stride       = stride,
+                bias         = False),
             nn.BatchNorm2d(hm_channels),
             nn.Tanh(),
         )
 
-    def forward(self, batchsize=1): return self.model(torch.randn(batchsize, hm_channels, self.noise_size, self.noise_size).to('cuda'))
+    def forward(self, batchsize=1): return self.model(torch.randn(batchsize, 1, self.noise_size, self.noise_size))
 
 
 class Discriminator(nn.Module):
-    def __init__(self, width_in, height_in, hm_filters1, hm_filters2, layers):
+    def __init__(self, width, height, layers, filters):
         super(Discriminator, self).__init__()
 
         self.model = nn.Sequential(
 
-            nn.Conv2d(in_channels  = hm_channels,
-                      out_channels = hm_filters1,
-                      kernel_size  = (required_kernel_size(width_in, layers[0]),
-                                      required_kernel_size(height_in, layers[0])),
-                      stride       = stride,
-                      bias         = False),
-            nn.BatchNorm2d(hm_filters1),
+            nn.Conv2d(
+                in_channels  = hm_channels,
+                out_channels = filters[0],
+                kernel_size  = (required_kernel_size(width, layers[0]),
+                                required_kernel_size(height, layers[0])),
+                stride       = stride,
+                bias         = False),
+            nn.BatchNorm2d(filters[0]),
             nn.LeakyReLU(),
 
-            nn.Conv2d(in_channels  = hm_filters1,
-                      out_channels = hm_filters2,
-                      kernel_size  = (required_kernel_size(layers[0], layers[1]),
-                                      required_kernel_size(layers[0], layers[1])),
-                      stride       = stride,
-                      bias         = False),
-            nn.BatchNorm2d(hm_filters2),
+            nn.Conv2d(
+                in_channels  = filters[0],
+                out_channels = filters[-1],
+                kernel_size  = (required_kernel_size(layers[0], layers[-1]),
+                                required_kernel_size(layers[0], layers[-1])),
+                stride       = stride,
+                bias         = False),
+            nn.BatchNorm2d(filters[-1]),
             nn.LeakyReLU(),
         )
 
-        conv_size_flatten = layers[-1] * layers[-1] * hm_filters2
+        flat_size = layers[-1] * layers[-1] * filters[-1]
 
         self.model2 = nn.Sequential(
 
-            nn.Linear(conv_size_flatten, int(conv_size_flatten / 2), bias=False),
-            nn.Linear(int(conv_size_flatten / 2), 1, bias=False),
+            nn.Linear(flat_size, int(flat_size / 2), bias=False),
+            nn.Linear(int(flat_size / 2), 1, bias=False),
             nn.Sigmoid()
         )
 
@@ -91,6 +96,7 @@ class Discriminator(nn.Module):
         result_pre = self.model(inp)
         result = self.model2(result_pre.view(result_pre.size(0), -1))
         return result
+
 
 
 def loss_discriminator(discriminator_results, labels):
@@ -119,13 +125,13 @@ def loss_generator(discriminator_results, loss_type='minimize'):
 
     return sum(results)
 
-
 def g_loss_fn(data):
     output, type = data
     if type == 'minimize':
         return (- torch.log(output)).sum()
     else:
         return (- torch.log(1 - output)).sum()
+
 
 
 def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0.001, batch_size=1):
@@ -162,6 +168,7 @@ def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0
                         param -= lr * param.grad / batch_size
                     param.grad = None
                 else: print(f'none grad on {update_for} : generator')
+
 
 
 def interact(generator): return generator.forward()

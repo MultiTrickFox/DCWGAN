@@ -86,7 +86,7 @@ def plot(losses, hm_epochs):
         plot.plot(range(hm_epochs), losses[_], color)
     plot.show()
 
-def imgmake(generator, hm):
+def imgmake(generator, hm=1):
     import torchvision.transforms.functional as F
 
     for _ in range(hm):
