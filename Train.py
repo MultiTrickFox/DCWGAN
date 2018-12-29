@@ -1,12 +1,16 @@
-import Models
-import res
+from random import shuffle
 
 from torch import cuda
+
+import Models
+
+import res
+
 
     # models
 
 
-generator = (50, 125)
+generator = (50, 150)
 
 discriminator = (50, 10)
 
@@ -18,7 +22,7 @@ d_filters = (5, 2)
     # params
 
 
-noise_size = 20
+noise_size = 10
 
 width = 256
 height = 256
@@ -29,7 +33,7 @@ hm_data    = 324
 batches_of = 9
 
 gen_maximize_loss = False
-learning_rate     = 0.001
+learning_rate     = 0.0005
 
 
     #
@@ -51,31 +55,34 @@ for i in range(hm_epochs):
 
     epoch_loss_gen, epoch_loss_disc = 0, 0
 
-    for real_data in res.batchify(data, batches_of):
+    shuffle(data)
+    data_batches = res.batchify(data, batches_of)
+
+    for real_data in data_batches:
 
         fake_data = generator.forward(batchsize=batches_of)
         real_data = real_data.to('cuda')
 
-        discriminator_result_fake = discriminator.forward(fake_data)
-        discriminator_result_real = discriminator.forward(real_data)
+        disc_result_fake = discriminator.forward(fake_data)
+        disc_result_real = discriminator.forward(real_data)
 
-        loss = Models.loss_discriminator_w(discriminator_result_real, discriminator_result_fake)
+        loss = Models.loss_discriminator_w(disc_result_real, disc_result_fake)
 
         Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
 
         epoch_loss_disc += float(loss)
 
         fake_data = generator.forward(batchsize=batches_of)
-        discriminator_result_fake = discriminator.forward(fake_data)
+        disc_result_fake = discriminator.forward(fake_data)
 
         if gen_maximize_loss:
-            loss = Models.loss_generator(discriminator_result_fake, loss_type='maximize')
+            loss = Models.loss_generator(disc_result_fake, loss_type='maximize')
             epoch_loss_gen += float(loss)
 
             Models.update(loss, discriminator, generator, update_for='generator', maximize_loss=True, lr=learning_rate, batch_size=batches_of)
 
         else:
-            loss = Models.loss_generator(discriminator_result_fake)
+            loss = Models.loss_generator(disc_result_fake)
             epoch_loss_gen += float(loss)
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)

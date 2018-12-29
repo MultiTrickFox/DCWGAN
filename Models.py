@@ -117,7 +117,8 @@ class Discriminator(nn.Module):
 
         self.model2 = nn.Sequential(
 
-            nn.Linear(flat_size, 1, bias=False),
+            nn.Linear(flat_size, int(flat_size/2), bias=False),
+            nn.Linear(int(flat_size/2), 1, bias=False),
             nn.Sigmoid()
         )
 
