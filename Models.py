@@ -177,6 +177,14 @@ def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0
 
     loss /= batch_size
     loss.backward()
+
+    if maximize_loss:
+        for param in generator.parameters():
+            if param.grad is not None:
+                param.grad = -param.grad
+            else:
+                print(f'none grad on {update_for} : generator')
+
     with torch.no_grad():
 
         if update_for == 'discriminator':
@@ -195,13 +203,6 @@ def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0
                 if param.grad is not None:
                     param.grad = None
                 else: print(f'none grad on {update_for} : discriminator')
-
-            if maximize_loss:
-                for param in generator.parameters():
-                    if param.grad is not None:
-                        param.grad = -param.grad
-                    else:
-                        print(f'none grad on {update_for} : generator')
 
             optimizers[1].step()
             optimizers[1].zero_grad()

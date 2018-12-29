@@ -12,11 +12,11 @@ import res
 
 gen_struct = (16, 32, 64)
 
-disc_struct = (2, )
+disc_struct = (16, )
 
 
 g_filters = (8, 16, 24)
-d_filters = (2, )
+d_filters = (8, )
 
 
     # params
@@ -30,12 +30,12 @@ height = 256
 
 hm_sessions = 1
 hm_epochs   = 10
-hm_data     = 200
+hm_data     = 100
 batches_of  = 20
 
 gen_maximize_loss = False
-gen_learning_rate     = 0.0002
-disc_learning_rate    = 0.0001
+gen_learning_rate     = 0.0005
+disc_learning_rate    = 0.000001
 
 
     #
@@ -44,8 +44,6 @@ disc_learning_rate    = 0.0001
 new_discriminator = True
 new_generator     = True
 
-
-data = res.get_data(hm_data)
 
 generator = res.pickle_load('generator.pkl')
 discriminator = res.pickle_load('discriminator.pkl')
@@ -63,6 +61,8 @@ if new_discriminator or discriminator is None:
 losses = ([], [])
 
 for j in range(hm_sessions):
+
+    data = res.get_data(hm_data)
 
     for i in range(hm_epochs):
 
@@ -92,11 +92,11 @@ for j in range(hm_sessions):
                 else Models.loss_generator(disc_result_fake, type='maximize')
 
             epoch_loss_gen += float(loss)
-            Models.update(loss, discriminator, generator, update_for='generator', lr=gen_learning_rate, batch_size=batches_of)
+            Models.update(loss, discriminator, generator, update_for='generator', lr=gen_learning_rate, batch_size=batches_of, maximize_loss=gen_maximize_loss)
 
 
             print('/', end='', flush=True)
-        print(f'\n {res.get_clock()} Epoch {i+1} Loss Disc : {round(epoch_loss_disc,3)} Loss Gen : {round(epoch_loss_gen,3)}')
+        print(f'\n {res.get_clock()} s {j+1} e {i+1} - Loss Disc : {round(epoch_loss_disc,3)} , Loss Gen : {round(epoch_loss_gen,3)}')
         losses[0].append(epoch_loss_gen) ; losses[1].append(epoch_loss_disc)
 print('Training is complete.')
 
