@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from torch.optim import SGD
+from torch.optim import RMSprop as RMS
 
 # global declarations
 
@@ -42,15 +42,15 @@ class Generator(nn.Module):
             nn.BatchNorm2d(filters[1]),
             nn.ReLU(),
 
-            # nn.ConvTranspose2d(
-            #     in_channels=filters[1],
-            #     out_channels=filters[2],
-            #     kernel_size=(required_kernel_size(layers[2], layers[1]),
-            #                  required_kernel_size(layers[2], layers[1])),
-            #     stride=stride,
-            #     bias=False),
-            # nn.BatchNorm2d(filters[2]),
-            # nn.ReLU(),
+            nn.ConvTranspose2d(
+                in_channels=filters[1],
+                out_channels=filters[2],
+                kernel_size=(required_kernel_size(layers[2], layers[1]),
+                             required_kernel_size(layers[2], layers[1])),
+                stride=stride,
+                bias=False),
+            nn.BatchNorm2d(filters[2]),
+            nn.ReLU(),
 
             # nn.ConvTranspose2d(
             #     in_channels=filters[2],
@@ -93,6 +93,26 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(),
 
             # nn.Conv2d(
+            #     in_channels=filters[-5],
+            #     out_channels=filters[-4],
+            #     kernel_size=(required_kernel_size(layers[-5], layers[-4]),
+            #                  required_kernel_size(layers[-5], layers[-4])),
+            #     stride=stride,
+            #     bias=False),
+            # nn.BatchNorm2d(filters[-4]),
+            # nn.LeakyReLU(),
+            #
+            # nn.Conv2d(
+            #     in_channels=filters[-4],
+            #     out_channels=filters[-3],
+            #     kernel_size=(required_kernel_size(layers[-4], layers[-3]),
+            #                  required_kernel_size(layers[-4], layers[-3])),
+            #     stride=stride,
+            #     bias=False),
+            # nn.BatchNorm2d(filters[-3]),
+            # nn.LeakyReLU(),
+            #
+            # nn.Conv2d(
             #     in_channels=filters[-3],
             #     out_channels=filters[-2],
             #     kernel_size=(required_kernel_size(layers[-3], layers[-2]),
@@ -101,7 +121,7 @@ class Discriminator(nn.Module):
             #     bias=False),
             # nn.BatchNorm2d(filters[-2]),
             # nn.LeakyReLU(),
-
+            #
             # nn.Conv2d(
             #     in_channels  = filters[-2],
             #     out_channels = filters[-1],
@@ -111,21 +131,30 @@ class Discriminator(nn.Module):
             #     bias         = False),
             # nn.BatchNorm2d(filters[-1]),
             # nn.LeakyReLU(),
+
+
+            nn.Conv2d(
+                in_channels=filters[-1],
+                out_channels=1,
+                kernel_size=(required_kernel_size(layers[-1], 1),
+                             required_kernel_size(layers[-1], 1)),
+                stride=stride,
+                bias=False),
+            nn.Sigmoid(),
         )
 
-        flat_size = layers[-1] * layers[-1] * filters[-1]
+        # flat_size = layers[-1] * layers[-1] * filters[-1]
 
-        self.model2 = nn.Sequential(
-
-            nn.Linear(flat_size, int(flat_size/2), bias=False),
-            nn.Linear(int(flat_size/2), 1, bias=False),
-            nn.Sigmoid()
-        )
+        # self.model2 = nn.Sequential(
+        #
+        #     nn.Linear(flat_size, 1, bias=False),
+        #     nn.Sigmoid()
+        # )
 
     def forward(self, inp):
         result_pre = self.model(inp)
-        result = self.model2(result_pre.view(result_pre.size(0), -1))
-        return result
+        # result = self.model2(result_pre.view(result_pre.size(0), -1))
+        return result_pre.squeeze(-1).squeeze(-1).sum(-1)  # .view(result_pre.size(0))
 
 
 
@@ -133,7 +162,7 @@ def loss_discriminator(discriminator_results, labels):
     return - (labels * torch.log(discriminator_results) + (1-labels) * torch.log(1-discriminator_results)).sum()
 
 def loss_discriminator_w(real_results, fake_results):
-    return (fake_results - real_results).sum()
+    return - (real_results - fake_results).sum()
 
 def loss_generator(discriminator_results, type='minimize'):
     if type == 'minimize':
@@ -144,7 +173,7 @@ optimizers = []
 
 def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0.001, batch_size=1):
     global optimizers
-    if not optimizers: optimizers = (SGD(discriminator.parameters(), lr), SGD(generator.parameters(), lr))
+    if not optimizers: optimizers = (RMS(discriminator.parameters(), lr), RMS(generator.parameters(), lr))
 
     loss /= batch_size
     loss.backward()
