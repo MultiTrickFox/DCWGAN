@@ -7,7 +7,7 @@ from glob import glob
 import random
 import numpy
 
-from torch import Tensor
+from torch import Tensor, stack
 
 import os
 import sys
@@ -21,12 +21,12 @@ def get_data(hm_samples):
     data = []
     for file in random.choices(files, k=hm_samples):
         img = Image.open(file) ; img.load()
-        data.append(Tensor(numpy.asarray(img).reshape(3, 256, 256)))
+        data.append(Tensor(numpy.asarray(img).reshape(3, 256, 256)).to('cpu'))
     return data
 
 def batchify(resource, batch_size):
     hm_batches = int(len(resource) / batch_size)
-    batched_resource = [resource[_ * batch_size : (_+1) * batch_size]
+    batched_resource = [stack(resource[_ * batch_size : (_+1) * batch_size], 0).to('cpu')
                         for _ in range(hm_batches)]
     hm_leftover = len(resource) % batch_size
     if hm_leftover != 0:

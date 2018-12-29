@@ -1,27 +1,24 @@
 import Models
 import res
 
-from random import shuffle
-from torch import stack, Tensor, tensor
-
-
+from torch import cuda
 
     # models
 
 
-generator = (150, )
+generator = (50, 125)
 
-discriminator = (25, )
+discriminator = (50, 10)
 
 
-g_filters = (2, )
-d_filters = (2, )
+g_filters = (5, 4)
+d_filters = (5, 2)
 
 
     # params
 
 
-noise_size = 50
+noise_size = 20
 
 width = 256
 height = 256
@@ -32,15 +29,18 @@ hm_data    = 324
 batches_of = 9
 
 gen_maximize_loss = False
-learning_rate     = 0.0002
+learning_rate     = 0.001
 
 
     #
 
+data = res.get_data(hm_data)
 
 generator = Models.Generator(noise_size, generator, g_filters, width, height)# ; generator = res.pickle_load('generator.pkl')
 discriminator = Models.Discriminator(width, height, discriminator, d_filters)# ; discriminator = res.pickle_load('discriminator.pkl')
 
+print(cuda.memory_allocated())
+print(cuda.memory_cached())
 
     #
 
@@ -51,42 +51,31 @@ for i in range(hm_epochs):
 
     epoch_loss_gen, epoch_loss_disc = 0, 0
 
-    batches = res.batchify(res.get_data(hm_data), batches_of)
-
-    for real_data in batches:
+    for real_data in res.batchify(data, batches_of):
 
         fake_data = generator.forward(batchsize=batches_of)
+        real_data = real_data.to('cuda')
 
-        real_set = tuple([(data, tensor(1)) for data in real_data])
-        fake_set = tuple([(data, tensor(0)) for data in fake_data])
+        discriminator_result_fake = discriminator.forward(fake_data)
+        discriminator_result_real = discriminator.forward(real_data)
 
-        all_set = [e for e in fake_set + real_set]
-        shuffle(all_set)
-
-        databox = []
-        labelbox = []
-        for e in all_set:
-            databox.append(e[0])
-            labelbox.append(e[1])
-
-        discriminator_result = discriminator.forward(stack(databox, 0))
-        loss = Models.loss_discriminator(discriminator_result, Tensor(labelbox))
+        loss = Models.loss_discriminator_w(discriminator_result_real, discriminator_result_fake)
 
         Models.update(loss, discriminator, generator, update_for='discriminator', lr=learning_rate, batch_size=batches_of)
 
         epoch_loss_disc += float(loss)
 
         fake_data = generator.forward(batchsize=batches_of)
-        discriminator_result = discriminator.forward(fake_data)
+        discriminator_result_fake = discriminator.forward(fake_data)
 
         if gen_maximize_loss:
-            loss = Models.loss_generator(discriminator_result, loss_type='maximize')
+            loss = Models.loss_generator(discriminator_result_fake, loss_type='maximize')
             epoch_loss_gen += float(loss)
 
             Models.update(loss, discriminator, generator, update_for='generator', maximize_loss=True, lr=learning_rate, batch_size=batches_of)
 
         else:
-            loss = Models.loss_generator(discriminator_result)
+            loss = Models.loss_generator(discriminator_result_fake)
             epoch_loss_gen += float(loss)
 
             Models.update(loss, discriminator, generator, update_for='generator', lr=learning_rate, batch_size=batches_of)

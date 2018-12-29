@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+from torch.optim import SGD
 
 # global declarations
 
@@ -31,16 +32,16 @@ class Generator(nn.Module):
             nn.BatchNorm2d(filters[0]),
             nn.ReLU(),
 
-            # nn.ConvTranspose2d(
-            #     in_channels  = filters[0],
-            #     out_channels = filters[1],
-            #     kernel_size  = (required_kernel_size(layers[1], layers[0]),
-            #                     required_kernel_size(layers[1], layers[0])),
-            #     stride       = stride,
-            #     bias         = False),
-            # nn.BatchNorm2d(filters[1]),
-            # nn.ReLU(),
-            #
+            nn.ConvTranspose2d(
+                in_channels  = filters[0],
+                out_channels = filters[1],
+                kernel_size  = (required_kernel_size(layers[1], layers[0]),
+                                required_kernel_size(layers[1], layers[0])),
+                stride       = stride,
+                bias         = False),
+            nn.BatchNorm2d(filters[1]),
+            nn.ReLU(),
+
             # nn.ConvTranspose2d(
             #     in_channels=filters[1],
             #     out_channels=filters[2],
@@ -50,7 +51,7 @@ class Generator(nn.Module):
             #     bias=False),
             # nn.BatchNorm2d(filters[2]),
             # nn.ReLU(),
-            #
+
             # nn.ConvTranspose2d(
             #     in_channels=filters[2],
             #     out_channels=filters[3],
@@ -92,14 +93,24 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(),
 
             # nn.Conv2d(
-            #     in_channels  = filters[0],
-            #     out_channels = filters[-1],
-            #     kernel_size  = (required_kernel_size(layers[0], layers[-1]),
-            #                     required_kernel_size(layers[0], layers[-1])),
-            #     stride       = stride,
-            #     bias         = False),
-            # nn.BatchNorm2d(filters[-1]),
+            #     in_channels=filters[-3],
+            #     out_channels=filters[-2],
+            #     kernel_size=(required_kernel_size(layers[-3], layers[-2]),
+            #                  required_kernel_size(layers[-3], layers[-2])),
+            #     stride=stride,
+            #     bias=False),
+            # nn.BatchNorm2d(filters[-2]),
             # nn.LeakyReLU(),
+
+            nn.Conv2d(
+                in_channels  = filters[-2],
+                out_channels = filters[-1],
+                kernel_size  = (required_kernel_size(layers[-2], layers[-1]),
+                                required_kernel_size(layers[-2], layers[-1])),
+                stride       = stride,
+                bias         = False),
+            nn.BatchNorm2d(filters[-1]),
+            nn.LeakyReLU(),
         )
 
         flat_size = layers[-1] * layers[-1] * filters[-1]
@@ -121,49 +132,49 @@ def loss_discriminator(discriminator_results, labels):
     return - (labels * torch.log(discriminator_results) + (1-labels) * torch.log(1-discriminator_results)).sum()
 
 def loss_discriminator_w(real_results, fake_results):
-    return fake_results - real_results
+    return - (fake_results - real_results).sum()
 
 def loss_generator(discriminator_results, type='minimize'):
     if type == 'minimize':
         return - (torch.log(discriminator_results)).sum()
     else: return - (torch.log(1-discriminator_results)).sum()
 
+optimizers = []
 
 def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0.001, batch_size=1):
+    global optimizers
+    if not optimizers: optimizers = (SGD(discriminator.parameters(), lr), SGD(generator.parameters(), lr))
+
+    loss /= batch_size
     loss.backward()
-    discriminator = discriminator.parameters()
-    generator = generator.parameters()
     with torch.no_grad():
 
         if update_for == 'discriminator':
 
-            for param in discriminator:
-                if param.grad is not None:
-                    param -= lr * param.grad / batch_size
-                    param.grad = None
-                else: print(f'none grad on {update_for} : discriminator')
+            optimizers[0].step()
+            optimizers[0].zero_grad()
 
-            for param in generator:
+            for param in generator.parameters():
                 if param.grad is not None:
                     param.grad = None
                 else: print(f'none grad on {update_for} : generator')
 
         elif update_for == 'generator':
 
-            for param in discriminator:
+            for param in discriminator.parameters():
                 if param.grad is not None:
                     param.grad = None
                 else: print(f'none grad on {update_for} : discriminator')
 
-            for param in generator:
-                if param.grad is not None:
-                    if maximize_loss:
-                        param += lr * param.grad / batch_size
+            if maximize_loss:
+                for param in generator.parameters():
+                    if param.grad is not None:
+                        param.grad = -param.grad
                     else:
-                        param -= lr * param.grad / batch_size
-                    param.grad = None
-                else: print(f'none grad on {update_for} : generator')
+                        print(f'none grad on {update_for} : generator')
 
+            optimizers[1].step()
+            optimizers[1].zero_grad()
 
 
 def interact(generator): return generator.forward()
