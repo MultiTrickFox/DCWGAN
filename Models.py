@@ -1,13 +1,14 @@
 import torch
 from torch import nn
 
-from multiprocessing.pool import ThreadPool as Pool
-
 
 # global declarations
 
 hm_channels = 3
 stride      = 1
+
+if torch.cuda.is_available():
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
 # models
@@ -30,15 +31,35 @@ class Generator(nn.Module):
             nn.BatchNorm2d(filters[0]),
             nn.ReLU(),
 
-            nn.ConvTranspose2d(
-                in_channels  = filters[0],
-                out_channels = filters[-1],
-                kernel_size  = (required_kernel_size(layers[-1], layers[0]),
-                                required_kernel_size(layers[-1], layers[0])),
-                stride       = stride,
-                bias         = False),
-            nn.BatchNorm2d(filters[-1]),
-            nn.ReLU(),
+            # nn.ConvTranspose2d(
+            #     in_channels  = filters[0],
+            #     out_channels = filters[1],
+            #     kernel_size  = (required_kernel_size(layers[1], layers[0]),
+            #                     required_kernel_size(layers[1], layers[0])),
+            #     stride       = stride,
+            #     bias         = False),
+            # nn.BatchNorm2d(filters[1]),
+            # nn.ReLU(),
+            #
+            # nn.ConvTranspose2d(
+            #     in_channels=filters[1],
+            #     out_channels=filters[2],
+            #     kernel_size=(required_kernel_size(layers[2], layers[1]),
+            #                  required_kernel_size(layers[2], layers[1])),
+            #     stride=stride,
+            #     bias=False),
+            # nn.BatchNorm2d(filters[2]),
+            # nn.ReLU(),
+            #
+            # nn.ConvTranspose2d(
+            #     in_channels=filters[2],
+            #     out_channels=filters[3],
+            #     kernel_size=(required_kernel_size(layers[3], layers[2]),
+            #                  required_kernel_size(layers[3], layers[2])),
+            #     stride=stride,
+            #     bias=False),
+            # nn.BatchNorm2d(filters[3]),
+            # nn.ReLU(),
 
             nn.ConvTranspose2d(
                 in_channels  = filters[-1],
@@ -70,15 +91,15 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(filters[0]),
             nn.LeakyReLU(),
 
-            nn.Conv2d(
-                in_channels  = filters[0],
-                out_channels = filters[-1],
-                kernel_size  = (required_kernel_size(layers[0], layers[-1]),
-                                required_kernel_size(layers[0], layers[-1])),
-                stride       = stride,
-                bias         = False),
-            nn.BatchNorm2d(filters[-1]),
-            nn.LeakyReLU(),
+            # nn.Conv2d(
+            #     in_channels  = filters[0],
+            #     out_channels = filters[-1],
+            #     kernel_size  = (required_kernel_size(layers[0], layers[-1]),
+            #                     required_kernel_size(layers[0], layers[-1])),
+            #     stride       = stride,
+            #     bias         = False),
+            # nn.BatchNorm2d(filters[-1]),
+            # nn.LeakyReLU(),
         )
 
         flat_size = layers[-1] * layers[-1] * filters[-1]
@@ -97,38 +118,15 @@ class Discriminator(nn.Module):
 
 
 def loss_discriminator(discriminator_results, labels):
-    with Pool(len(labels)) as p:
-        results = p.map(d_loss_fn, tuple([(discriminator_result, label) for discriminator_result, label in zip(discriminator_results, labels)]))
+    return - (labels * torch.log(discriminator_results) + (1-labels) * torch.log(1-discriminator_results)).sum()
 
-        p.close()
-        p.join()
+def loss_discriminator_w(real_results, fake_results):
+    return fake_results - real_results
 
-    return sum(results)
-
-def d_loss_fn(data):
-    output, target = data
-    if target == 1:
-        return (- torch.log(output)).sum()
-    else:
-        return (- torch.log(1 - output)).sum()
-
-
-def loss_generator(discriminator_results, loss_type='minimize'):
-    with Pool(len(discriminator_results)) as p:
-        results = p.map(d_loss_fn, tuple([(discriminator_result, loss_type) for discriminator_result in discriminator_results]))
-
-        p.close()
-        p.join()
-
-    return sum(results)
-
-def g_loss_fn(data):
-    output, type = data
+def loss_generator(discriminator_results, type='minimize'):
     if type == 'minimize':
-        return (- torch.log(output)).sum()
-    else:
-        return (- torch.log(1 - output)).sum()
-
+        return - (torch.log(discriminator_results)).sum()
+    else: return - (torch.log(1-discriminator_results)).sum()
 
 
 def update(loss, discriminator, generator, update_for, maximize_loss=False, lr=0.001, batch_size=1):
