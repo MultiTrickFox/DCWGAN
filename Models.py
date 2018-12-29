@@ -102,15 +102,15 @@ class Discriminator(nn.Module):
             # nn.BatchNorm2d(filters[-2]),
             # nn.LeakyReLU(),
 
-            nn.Conv2d(
-                in_channels  = filters[-2],
-                out_channels = filters[-1],
-                kernel_size  = (required_kernel_size(layers[-2], layers[-1]),
-                                required_kernel_size(layers[-2], layers[-1])),
-                stride       = stride,
-                bias         = False),
-            nn.BatchNorm2d(filters[-1]),
-            nn.LeakyReLU(),
+            # nn.Conv2d(
+            #     in_channels  = filters[-2],
+            #     out_channels = filters[-1],
+            #     kernel_size  = (required_kernel_size(layers[-2], layers[-1]),
+            #                     required_kernel_size(layers[-2], layers[-1])),
+            #     stride       = stride,
+            #     bias         = False),
+            # nn.BatchNorm2d(filters[-1]),
+            # nn.LeakyReLU(),
         )
 
         flat_size = layers[-1] * layers[-1] * filters[-1]
@@ -133,7 +133,7 @@ def loss_discriminator(discriminator_results, labels):
     return - (labels * torch.log(discriminator_results) + (1-labels) * torch.log(1-discriminator_results)).sum()
 
 def loss_discriminator_w(real_results, fake_results):
-    return - (fake_results - real_results).sum()
+    return (fake_results - real_results).sum()
 
 def loss_generator(discriminator_results, type='minimize'):
     if type == 'minimize':

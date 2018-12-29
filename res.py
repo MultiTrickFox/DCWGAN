@@ -7,7 +7,7 @@ from glob import glob
 import random
 import numpy
 
-from torch import Tensor, stack
+from torch import Tensor
 
 import os
 import sys
@@ -26,7 +26,7 @@ def get_data(hm_samples):
 
 def batchify(resource, batch_size):
     hm_batches = int(len(resource) / batch_size)
-    batched_resource = [stack(resource[_ * batch_size : (_+1) * batch_size], 0).to('cpu')
+    batched_resource = [resource[_ * batch_size : (_+1) * batch_size]
                         for _ in range(hm_batches)]
     hm_leftover = len(resource) % batch_size
     if hm_leftover != 0:

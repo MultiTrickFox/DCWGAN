@@ -1,6 +1,6 @@
 from random import shuffle
 
-from torch import cuda
+from torch import stack, cuda
 
 import Models
 
@@ -12,11 +12,11 @@ import res
 
 generator = (50, 150)
 
-discriminator = (50, 10)
+discriminator = (10, )
 
 
 g_filters = (5, 4)
-d_filters = (5, 2)
+d_filters = (5, )
 
 
     # params
@@ -29,7 +29,7 @@ height = 256
 
 
 hm_epochs  = 50
-hm_data    = 324
+hm_data    = 81#648
 batches_of = 9
 
 gen_maximize_loss = False
@@ -53,15 +53,14 @@ losses = ([], [])
 
 for i in range(hm_epochs):
 
-    epoch_loss_gen, epoch_loss_disc = 0, 0
+    shuffle(data) ; data_batches = res.batchify(data, batches_of)
 
-    shuffle(data)
-    data_batches = res.batchify(data, batches_of)
+    epoch_loss_gen, epoch_loss_disc = 0, 0
 
     for real_data in data_batches:
 
         fake_data = generator.forward(batchsize=batches_of)
-        real_data = real_data.to('cuda')
+        real_data = stack(real_data, 0).to('cuda')
 
         disc_result_fake = discriminator.forward(fake_data)
         disc_result_real = discriminator.forward(real_data)
