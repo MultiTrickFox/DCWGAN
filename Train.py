@@ -10,12 +10,12 @@ import res
     # models
 
 
-generator = (16, 32, 64)
+gen_struct = (16, 32, 64)
 
-discriminator = (2, )
+disc_struct = (2, )
 
 
-g_filters = (6, 8, 9)
+g_filters = (8, 16, 24)
 d_filters = (2, )
 
 
@@ -29,21 +29,30 @@ height = 256
 
 
 hm_sessions = 1
-hm_epochs   = 20
-hm_data     = 100
+hm_epochs   = 10
+hm_data     = 200
 batches_of  = 20
 
 gen_maximize_loss = False
-gen_learning_rate     = 0.0005
-disc_learning_rate    = 0.0005
+gen_learning_rate     = 0.0002
+disc_learning_rate    = 0.0001
 
 
     #
 
+
+new_discriminator = True
+new_generator     = True
+
+
 data = res.get_data(hm_data)
 
-generator = Models.Generator(noise_size, generator, g_filters, width, height)# ; generator = res.pickle_load('generator.pkl')
-discriminator = Models.Discriminator(width, height, discriminator, d_filters)# ; discriminator = res.pickle_load('discriminator.pkl')
+generator = res.pickle_load('generator.pkl')
+discriminator = res.pickle_load('discriminator.pkl')
+if new_generator or generator is None:
+    generator = Models.Generator(noise_size, gen_struct, g_filters, width, height)
+if new_discriminator or discriminator is None:
+    discriminator = Models.Discriminator(width, height, disc_struct, d_filters)
 
 # print(cuda.memory_allocated())
 # print(cuda.memory_cached())
@@ -80,7 +89,7 @@ for j in range(hm_sessions):
             disc_result_fake = discriminator.forward(fake_data)
 
             loss = Models.loss_generator(disc_result_fake) if not gen_maximize_loss \
-                else Models.loss_generator(disc_result_fake, loss_type='maximize')
+                else Models.loss_generator(disc_result_fake, type='maximize')
 
             epoch_loss_gen += float(loss)
             Models.update(loss, discriminator, generator, update_for='generator', lr=gen_learning_rate, batch_size=batches_of)
