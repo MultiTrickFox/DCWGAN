@@ -1,41 +1,40 @@
-from random import shuffle
-
+from random import shuffle, choice
+from Models import RMS, Adam
 from torch import stack
 
 import Models
-
 import res
 
 
     # models
 
 
-gen_struct = (16, 32, 64)
+gen_struct = (4, 8, 16, 32, 64, 128)
+g_filters  = (256, 128, 64, 32, 16, 8)
 
-disc_struct = (16, )
-
-
-g_filters = (8, 16, 24)
-d_filters = (8, )
+disc_struct = (128, 64, 32, 16, 8, 4)
+d_filters   = (8, 16, 32, 64, 16, 4)
 
 
     # params
 
 
-noise_size = 10
+noise_size = 100
 
-width = 256
-height = 256
+width = 128
+height = 128
 
 
-hm_sessions = 1
-hm_epochs   = 10
-hm_data     = 100
-batches_of  = 20
+hm_sessions = 2
+hm_epochs   = 20
+hm_data     = 200
+batches_of  = 10
 
-gen_maximize_loss = False
-gen_learning_rate     = 0.0005
-disc_learning_rate    = 0.000001
+gen_maximize_loss  = False
+gen_learning_rate  = 1e-4
+disc_learning_rate = 1e-4
+
+hm = 1
 
 
     #
@@ -52,8 +51,8 @@ if new_generator or generator is None:
 if new_discriminator or discriminator is None:
     discriminator = Models.Discriminator(width, height, disc_struct, d_filters)
 
-# print(cuda.memory_allocated())
-# print(cuda.memory_cached())
+optimizers = (RMS(discriminator.parameters(), disc_learning_rate), Adam(generator.parameters(), gen_learning_rate))
+
 
     #
 
@@ -79,33 +78,50 @@ for j in range(hm_sessions):
             disc_result_fake = discriminator.forward(fake_data)
             disc_result_real = discriminator.forward(real_data)
 
-            loss = Models.loss_discriminator_w(disc_result_real, disc_result_fake)
+            loss = Models.loss_discriminator(disc_result_real, 1) + Models.loss_discriminator(disc_result_fake, 1)
+            # loss = Models.loss_discriminator_w(disc_result_real, disc_result_fake)
 
-            epoch_loss_disc += float(loss)
-            Models.update(loss, discriminator, generator, update_for='discriminator', lr=disc_learning_rate, batch_size=batches_of)
+            epoch_loss_disc += float(loss)/hm
+            Models.update(loss, discriminator, generator, update_for='discriminator', optimizers=optimizers, batch_size=batches_of)
+
+            for _ in range(hm-1):
+                fake_data = generator.forward(batchsize=batches_of)
+                real_data = stack(choice(data_batches), 0).to('cuda')
+
+                loss = Models.loss_discriminator_w(disc_result_real, disc_result_fake)
+
+                epoch_loss_disc += float(loss)/hm
+                Models.update(loss, discriminator, generator, update_for='discriminator', optimizers=optimizers, batch_size=batches_of)
+
 
             fake_data = generator.forward(batchsize=batches_of)
 
             disc_result_fake = discriminator.forward(fake_data)
 
-            loss = Models.loss_generator(disc_result_fake) if not gen_maximize_loss \
-                else Models.loss_generator(disc_result_fake, type='maximize')
+            loss = Models.loss_generator(disc_result_fake)
 
-            epoch_loss_gen += float(loss)
-            Models.update(loss, discriminator, generator, update_for='generator', lr=gen_learning_rate, batch_size=batches_of, maximize_loss=gen_maximize_loss)
+            epoch_loss_gen += float(loss) # / hm
+            Models.update(loss, discriminator, generator, update_for='generator', optimizers=optimizers, batch_size=batches_of)
+
+            # for _ in range(hm - 1):
+            #     fake_data = generator.forward(batchsize=batches_of)
+            #
+            #     disc_result_fake = discriminator.forward(fake_data)
+            #
+            #     loss = Models.loss_generator(disc_result_fake, type='maximize' if gen_maximize_loss else 'minimize')
+            #
+            #     epoch_loss_gen += float(loss) / hm
+            #     Models.update(loss, discriminator, generator, update_for='generator', lr=disc_learning_rate, batch_size=batches_of)
 
 
             print('/', end='', flush=True)
-        print(f'\n {res.get_clock()} s {j+1} e {i+1} - Loss Disc : {round(epoch_loss_disc,3)} , Loss Gen : {round(epoch_loss_gen,3)}')
+        print(f'\n {res.get_clock()} s{j+1}e{i+1} - Loss Disc : {round(epoch_loss_disc,3)} , Loss Gen : {round(epoch_loss_gen,3)}')
         losses[0].append(epoch_loss_gen) ; losses[1].append(epoch_loss_disc)
+    res.imgmake(generator, hm=5)
 print('Training is complete.')
 
 
-
-
-
-res.plot(losses, hm_epochs)
-res.imgmake(generator, hm=5)
+res.plot(losses)
 
 
 if input('hit n to NOT SAVE..: ') != 'n':

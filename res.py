@@ -21,7 +21,8 @@ def get_data(hm_samples):
     data = []
     for file in random.choices(files, k=hm_samples):
         img = Image.open(file) ; img.load()
-        data.append(Tensor(numpy.asarray(img).reshape(3, 256, 256)).to('cpu'))
+        img = img.resize((128, 128), Image.ANTIALIAS)
+        data.append(Tensor(numpy.asarray(img).reshape(3, 128, 128)).to('cpu'))
     return data
 
 def batchify(resource, batch_size):
@@ -78,9 +79,10 @@ class MacOSFile(object):
 
 
 
-def plot(losses, hm_epochs):
+def plot(losses):
     import matplotlib.pyplot as plot
 
+    hm_epochs = len(losses[0])
     for _, color in enumerate(('g', 'b')):
         plot.figure(_)
         plot.plot(range(hm_epochs), losses[_], color)
